@@ -1,4 +1,4 @@
-# parallelised_deeprl
+# Deep RL Parallelised
 TO DO: 
 1) Coder les n policies (actions)
 2) Coder DQN (bon réseau, probablement Kéras)
