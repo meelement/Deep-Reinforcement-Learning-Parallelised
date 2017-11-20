@@ -36,7 +36,10 @@ python3 main.py
 
 ### More advanced commands
 
-
 ## Versioning
 
 
+## Authors
+Charles Dognin
+Mehdi Abbana Bennani
+Jean-Michel Roufosse
