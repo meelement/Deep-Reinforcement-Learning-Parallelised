@@ -1,116 +1,125 @@
 from keras.callbacks import TensorBoard
-from keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Activation, Dense, Dropout, Flatten
+from keras.layers import Activation, Dense, Flatten, Cropping2D, Conv2D
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Lambda
+from keras.backend import tf as ktf
 
 from time import time
 from time import strftime
 import numpy as np
 
-num_classes = 18
-batch_size = 128
-epochs = 15
-data_augmentation = False
-input_shape = ()
 
-training_directory = "train/"
-validation_directory = "valid/"
-testing_directory = "test/"
+class DQN():
 
-# Data augmentation
+    def __init__(self, batch_size, optimizer = "Adam"):
+        self.train_datagen = ImageDataGenerator()
+        self.batch_size = batch_size
 
-datagen = ImageDataGenerator(featurewise_center=False,
-                             samplewise_center=False,
-                             featurewise_std_normalization=False,
-                             samplewise_std_normalization=False,
-                             zca_whitening=False,
-                             zca_epsilon=1e-6,
-                             rotation_range=10,
-                             width_shift_range=0.2,
-                             height_shift_range=0.2,
-                             shear_range=0,
-                             zoom_range=0.3,
-                             channel_shift_range=0.,
-                             fill_mode='nearest',
-                             cval=0.,
-                             horizontal_flip=True,
-                             vertical_flip=False,
-                             rescale=None,
-                             preprocessing_function=None,
-                             data_format="channels_last")
+        # Visualize training
+        self.tensorboard = self.tensorboard_object()
 
-# Model
-model = Sequential()
+        self.model = self.build_model()
+        # Compile the model
+        self.model.compile(loss='mean_squared_error',
+                      optimizer=optimizer,
+                      metrics=['mae'])
 
-# Convolutional
-model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=input_shape))
-model.add(Conv2D(input_shape=(32, 32, 3),
-                 filters=6,
-                 kernel_size=(5, 5), strides=(1, 1),
-                 padding='valid',
-                 dilation_rate=(1, 1),
-                 use_bias=True,
-                 kernel_initializer='glorot_uniform',
-                 bias_initializer='zeros'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), padding='valid'))
-model.add(Conv2D(filters=16,
-                 kernel_size=(5, 5), strides=(1, 1),
-                 padding='valid',
-                 dilation_rate=(1, 1),
-                 use_bias=True,
-                 kernel_initializer='glorot_uniform',
-                 bias_initializer='zeros'))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2), padding='valid'))
+    @staticmethod
+    def tensorboard_object():
+        now = strftime("%c")
+        log_dir = "logs/" + now.format(time())
+        return TensorBoard(log_dir=log_dir)
 
-# Fully connected
-model.add(Flatten())
-# model.add(Dropout(0.35))
-model.add(Dense(units=120))
-model.add(Activation('relu'))
-model.add(Dense(units=84))
-model.add(Activation('relu'))
-model.add(Dense(units=num_classes))
-model.add(Activation('softmax'))
+    def build_model(self):
+        # Model
+        model = Sequential()
 
-# Model training
-model.compile(loss='categorical_crossentropy',
-              optimizer='Adam',
-              metrics=['accuracy'])
+        # Convolutional
+        model.add(Cropping2D(cropping=((45, 5), (0, 0)), input_shape=input_shape))
+        Lambda(lambda image: ktf.image.resize_images(image, (80, 200)))
+        model.add(Lambda(lambda x: (x / 255.0) - 0.5))
 
-# Visualize training
-now = strftime("%c")
-tensorboard = TensorBoard(log_dir="logs/"+now.format(time()))
+        model.add(Conv2D(filters=6,
+                         kernel_size=(5, 5), strides=(2, 2),
+                         padding='valid',
+                         dilation_rate=(1, 1),
+                         use_bias=True,
+                         kernel_initializer='glorot_uniform',
+                         bias_initializer='zeros'))
+        model.add(Activation('relu'))
 
-if data_augmentation :
-    model.fit_generator(datagen.flow(x_train,
-                                     y_train,
-                                     batch_size=batch_size),
-                        steps_per_epoch=int(np.ceil(x_train.shape[0] / float(batch_size))),
-                        epochs=epochs,
-                        workers=4,
-                        callbacks=[tensorboard],
-                        verbose=0,
-                        validation_data=(x_valid, y_valid))
-else :
-    model.fit(x_train, y_train,
-              batch_size=batch_size,
-              epochs=epochs,
-              verbose=0,
-              callbacks=[tensorboard],
-              validation_data=(x_valid, y_valid),
-              shuffle=True)
+        model.add(Conv2D(filters=16,
+                         kernel_size=(5, 5), strides=(2, 2),
+                         padding='valid',
+                         dilation_rate=(1, 1),
+                         use_bias=True,
+                         kernel_initializer='glorot_uniform',
+                         bias_initializer='zeros'))
+        model.add(Activation('relu'))
 
-# Model fit
+        model.add(Conv2D(filters=32,
+                         kernel_size=(5, 5), strides=(2, 2),
+                         padding='valid',
+                         dilation_rate=(1, 1),
+                         use_bias=True,
+                         kernel_initializer='glorot_uniform',
+                         bias_initializer='zeros'))
+        model.add(Activation('relu'))
 
-loss_and_metrics = model.evaluate(x_valid, y_valid, batch_size=batch_size, verbose=0)
-print("valid_accuracy" + str(loss_and_metrics))
-loss_and_metrics = model.evaluate(x_test, y_test, batch_size=batch_size, verbose=0)
-print("test_accuracy" + str(loss_and_metrics))
+        model.add(Conv2D(filters=32,
+                         kernel_size=(3, 3), strides=(1, 1),
+                         padding='valid',
+                         dilation_rate=(1, 1),
+                         use_bias=True,
+                         kernel_initializer='glorot_uniform',
+                         bias_initializer='zeros'))
+        model.add(Activation('relu'))
 
-model_json = model.to_json()
-with open("logs/" + now.format(time()) + "/model.json", "w") as json_file:
-json_file.write(model_json)
+        model.add(Conv2D(filters=32,
+                         kernel_size=(3, 3), strides=(1, 1),
+                         padding='valid',
+                         dilation_rate=(1, 1),
+                         use_bias=True,
+                         kernel_initializer='glorot_uniform',
+                         bias_initializer='zeros'))
+        model.add(Activation('relu'))
+
+        # Fully connected
+        model.add(Flatten())
+        # model.add(Dropout(0.35))
+        model.add(Dense(units=1164))
+        model.add(Activation('relu'))
+        model.add(Dense(units=100))
+        model.add(Activation('relu'))
+        model.add(Dense(units=50))
+        model.add(Activation('relu'))
+        model.add(Dense(units=10))
+        model.add(Activation('relu'))
+        model.add(Dense(units=1))
+        return model
+
+    def learn(self, x_train, y_train) :
+
+        train_size = x_train.shape[0]
+
+        train_generator = self.train_datagen.flow(x_train, y_train, batch_size=self.batch_size)
+        
+        # Train the model
+        self.model.fit_generator(train_generator,
+                            steps_per_epoch=int(np.ceil(train_size / float(self.batch_size))),
+                            epochs=self.epochs,
+                            workers=4,
+                            callbacks=[self.tensorboard],
+                            verbose=1)
+
+    def predict(self, state):
+        self.model.predict(state)
+
+    def save_model(self, log_dir):
+        # Saving the model
+        model_json = self.model.to_json()
+        with open(log_dir + "/model.json", "w") as json_file:
+            json_file.write(model_json)
+
+        self.model.save(log_dir + '/my_model.h5')
