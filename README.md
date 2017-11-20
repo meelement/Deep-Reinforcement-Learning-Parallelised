@@ -40,6 +40,6 @@ python3 main.py
 
 
 ## Authors
-Charles Dognin
-Mehdi Abbana Bennani
-Jean-Michel Roufosse
+Charles Dognin  
+Mehdi Abbana Bennani  
+Jean-Michel Roufosse  
