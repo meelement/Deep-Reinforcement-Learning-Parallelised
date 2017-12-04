@@ -1,6 +1,6 @@
 # Massively Parallel Methods for Deep Reinforcement Learning
 
-In this project, we implement a parralelized DQN on CPU, as presented in the paper :  [Massively Parallel Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1507.04296)
+In this project, we implement a parralelised DQN on CPU, as presented in the paper :  [Massively Parallel Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1507.04296)
 
 ## Getting Started
 

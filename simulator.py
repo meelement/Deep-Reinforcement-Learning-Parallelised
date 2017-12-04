@@ -1,12 +1,11 @@
 from agent import Agent
 from deepnet import DQN
 import gym
+import numpy as np
 
 
 class Simulator():
-
     def __init__(self, parameters):
-
         self.env = gym.make(parameters["env_name"])
         self.deep_q_net = DQN(batch_size=parameters['batch_size'],
                               optimizer=parameters["optimizer"],
@@ -15,45 +14,51 @@ class Simulator():
                              policy_name="epsilon-greedy",
                              agent_parameters=parameters["agent_parameters"])
                        for _ in range(parameters["nb_agents"])]
+        self.input_shape = parameters["input_shape"]
 
     def run_episodes(self, agent, nb_episodes):
         for i in range(nb_episodes):
             episodes_rewards = []
-            episodes_obs = []
+            episodes_obs = np.expand_dims(np.empty(self.input_shape), axis=0)
             episodes_actions = []
-            ob = self.env.reset()
 
             reward = 0
             done = False
-            episode_rewards = []
-            episode_obs = []
+            ob = self.env.reset()
 
             while not done:
                 action = agent.act(state=ob,
                                    possible_actions=self.env.action_space)
                 ob, reward, done, _ = self.env.step(action)
                 reward += reward
-                episode_rewards.append(reward)
-                episode_obs.append(ob)
+
+                episodes_rewards.append(reward)
+                episodes_obs = np.concatenate((episodes_obs, np.expand_dims(ob, axis=0)), axis=0)
                 episodes_actions.append(action)
 
-            episodes_rewards.append(episode_rewards)
-            episodes_obs.append(episodes_obs)
-            episodes_actions.append(episodes_actions)
-
-        return {"episodes_rewards" : [sum(episode_rewards[i::]) for i in range(len(episode_rewards))],
-                "episodes_obs": episodes_obs,
-                "episode_actions": episodes_actions}
+        # TODO gamma
+        return {"rewards": np.array([sum(episodes_rewards[i::]) for i in range(len(episodes_rewards))]),
+                "obs": episodes_obs,
+                "actions": np.array(episodes_actions)}
 
     def run_agents(self, agents, nb_episodes):
         simulations = []
-        for agent in agents :
+        for agent in agents:
             simulations.append(self.run_episodes(agent, nb_episodes))
         return simulations
 
     def run_simulator(self, nb_iterations, nb_episodes):
-        for _ in range(nb_iterations):
-            simulations = self.run_agents(self.agents,
-                                          nb_episodes=nb_episodes)
-            self.deep_q_net.learn(simulations)
+        for i in range(nb_iterations):
+            print("Iteration " + str(i) + "/" + str(nb_iterations))
+            simulations = self.reshape_simulations(self.run_agents(self.agents,
+                                                                   nb_episodes=nb_episodes))
+            self.deep_q_net.learn(x_train=simulations["obs"],
+                                  y_train=simulations["rewards"])
             # TODO : Complete the DQN learning
+
+    @staticmethod
+    def reshape_simulations(simulations):
+        rewards = np.concatenate(tuple([simulations["rewards"]]), axis=0)
+        obs = np.concatenate(tuple([simulations["obs"]]), axis=0)
+        return {"rewards": rewards,
+                "obs": obs}
