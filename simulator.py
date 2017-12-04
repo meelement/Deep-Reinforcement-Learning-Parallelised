@@ -1,4 +1,4 @@
-from deepnet import DQN
+from dnn1 import model_1
 from agent import Agent
 
 import gym
