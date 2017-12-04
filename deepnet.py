@@ -39,7 +39,7 @@ class DQN():
         # Top Model Block
         x = base_model.output
         x = GlobalAveragePooling2D()(x)
-        predictions = Dense(1, activation='softmax')(x)
+        predictions = Dense(1, activation='tanh')(x)
 
         # add your top layer block to your base model
         model = Model(base_model.input, predictions)
@@ -56,17 +56,16 @@ class DQN():
         
         # Train the model
         self.model.fit_generator(train_generator,
-                            steps_per_epoch=int(np.ceil(train_size / float(self.batch_size))),
-                            epochs=self.epochs,
-                            workers=4,
-                            callbacks=[self.tensorboard],
-                            verbose=1)
+                                 steps_per_epoch=int(np.ceil(train_size / float(self.batch_size))),
+                                 epochs=self.epochs,
+                                 workers=4,
+                                 callbacks=[self.tensorboard],
+                                 verbose=1)
 
     def predict(self, state, action):
-        self.model.predict(np.expand_dims(state, axis=0))
+        return self.model.predict(np.expand_dims(state, axis=0))
 
     def save_model(self, log_dir, model_name):
-        # Saving the model
         model_json = self.model.to_json()
         with open(log_dir + "/model.json", "w") as json_file:
             json_file.write(model_json)

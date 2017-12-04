@@ -40,11 +40,10 @@ class Simulator():
             episodes_rewards.append(episode_rewards)
             episodes_obs.append(episodes_obs)
             episodes_actions.append(episodes_actions)
-        return {
-            "episodes_rewards": episodes_rewards,
-            "episodes_obs": episodes_obs,
-            "episode_actions": episodes_actions
-            }
+
+        return {"episodes_rewards" : [sum(episode_rewards[i::]) for i in range(len(episode_rewards))],
+                "episodes_obs": episodes_obs,
+                "episode_actions": episodes_actions}
 
     def run_agents(self, agents, nb_episodes):
         simulations = []
