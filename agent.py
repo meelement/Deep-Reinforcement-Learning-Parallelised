@@ -17,9 +17,8 @@ class Agent():
             action = possible_actions.sample()
         else :
             # TODO : predict state action value
-            values = [self.dqn.predict(state=state, action=possible_actions[i])
-                      for i in range(num_actions)]
-            action = possible_actions[np.argmax(values)]
+            values = [self.dqn.predict(state=state, action=i) for i in range(num_actions)]
+            action = np.argmax(values)
         return action
 
     def thompson_sampling(self):
