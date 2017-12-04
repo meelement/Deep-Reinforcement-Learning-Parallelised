@@ -12,9 +12,10 @@ import numpy as np
 
 class DQN():
 
-    def __init__(self, batch_size, optimizer = "Adam"):
+    def __init__(self, batch_size, input_shape, optimizer = "Adam"):
         self.train_datagen = ImageDataGenerator()
         self.batch_size = batch_size
+        self.input_shape = input_shape
 
         # Visualize training
         self.tensorboard = self.tensorboard_object()
@@ -36,7 +37,8 @@ class DQN():
         model = Sequential()
 
         # Convolutional
-        model.add(Cropping2D(cropping=((45, 5), (0, 0)), input_shape=input_shape))
+        model.add(Cropping2D(cropping=((45, 5), (0, 0)),
+                             input_shape=self.input_shape))
         Lambda(lambda image: ktf.image.resize_images(image, (80, 200)))
         model.add(Lambda(lambda x: (x / 255.0) - 0.5))
 
@@ -103,7 +105,9 @@ class DQN():
 
         train_size = x_train.shape[0]
 
-        train_generator = self.train_datagen.flow(x_train, y_train, batch_size=self.batch_size)
+        train_generator = self.train_datagen.flow(x_train,
+                                                  y_train,
+                                                  batch_size=self.batch_size)
         
         # Train the model
         self.model.fit_generator(train_generator,
@@ -113,13 +117,13 @@ class DQN():
                             callbacks=[self.tensorboard],
                             verbose=1)
 
-    def predict(self, state):
+    def predict(self, state, action):
         self.model.predict(state)
 
-    def save_model(self, log_dir):
+    def save_model(self, log_dir, model_name):
         # Saving the model
         model_json = self.model.to_json()
         with open(log_dir + "/model.json", "w") as json_file:
             json_file.write(model_json)
 
-        self.model.save(log_dir + '/my_model.h5')
+        self.model.save(log_dir + '/' + model_name + '.h5')
