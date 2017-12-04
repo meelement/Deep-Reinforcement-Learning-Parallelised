@@ -14,8 +14,7 @@ class Agent():
         num_actions = possible_actions.n
         if np.random.uniform() < self.epsilon :
             action = possible_actions.sample()
-        else :
-            # TODO : predict state action value
+        else:
             values = [self.dqn.predict(state=state, action=i) for i in range(num_actions)]
             action = np.argmax(values)
         return action
