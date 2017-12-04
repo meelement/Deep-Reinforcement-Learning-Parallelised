@@ -1,9 +1,8 @@
 from keras.callbacks import TensorBoard
-from keras.layers import Activation, Dense, Flatten, Cropping2D, Conv2D
-from keras.models import Sequential
+from keras.layers import Activation, Dense, GlobalAveragePooling2D
 from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Lambda
-from keras.backend import tf as ktf
+from keras.models import Model
+from keras.applications.xception import Xception
 
 from time import time
 from time import strftime
@@ -33,72 +32,18 @@ class DQN():
         return TensorBoard(log_dir=log_dir)
 
     def build_model(self):
-        # Model
-        model = Sequential()
+        base_model = Xception(input_shape=self.input_shape,
+                              weights='imagenet',
+                              include_top=False)
 
-        # Convolutional
-        model.add(Cropping2D(cropping=((45, 5), (0, 0)),
-                             input_shape=self.input_shape))
-        Lambda(lambda image: ktf.image.resize_images(image, (80, 200)))
-        model.add(Lambda(lambda x: (x / 255.0) - 0.5))
+        # Top Model Block
+        x = base_model.output
+        x = GlobalAveragePooling2D()(x)
+        predictions = Dense(1, activation='softmax')(x)
 
-        model.add(Conv2D(filters=6,
-                         kernel_size=(5, 5), strides=(2, 2),
-                         padding='valid',
-                         dilation_rate=(1, 1),
-                         use_bias=True,
-                         kernel_initializer='glorot_uniform',
-                         bias_initializer='zeros'))
-        model.add(Activation('relu'))
+        # add your top layer block to your base model
+        model = Model(base_model.input, predictions)
 
-        model.add(Conv2D(filters=16,
-                         kernel_size=(5, 5), strides=(2, 2),
-                         padding='valid',
-                         dilation_rate=(1, 1),
-                         use_bias=True,
-                         kernel_initializer='glorot_uniform',
-                         bias_initializer='zeros'))
-        model.add(Activation('relu'))
-
-        model.add(Conv2D(filters=32,
-                         kernel_size=(5, 5), strides=(2, 2),
-                         padding='valid',
-                         dilation_rate=(1, 1),
-                         use_bias=True,
-                         kernel_initializer='glorot_uniform',
-                         bias_initializer='zeros'))
-        model.add(Activation('relu'))
-
-        model.add(Conv2D(filters=32,
-                         kernel_size=(3, 3), strides=(1, 1),
-                         padding='valid',
-                         dilation_rate=(1, 1),
-                         use_bias=True,
-                         kernel_initializer='glorot_uniform',
-                         bias_initializer='zeros'))
-        model.add(Activation('relu'))
-
-        model.add(Conv2D(filters=32,
-                         kernel_size=(3, 3), strides=(1, 1),
-                         padding='valid',
-                         dilation_rate=(1, 1),
-                         use_bias=True,
-                         kernel_initializer='glorot_uniform',
-                         bias_initializer='zeros'))
-        model.add(Activation('relu'))
-
-        # Fully connected
-        model.add(Flatten())
-        # model.add(Dropout(0.35))
-        model.add(Dense(units=1164))
-        model.add(Activation('relu'))
-        model.add(Dense(units=100))
-        model.add(Activation('relu'))
-        model.add(Dense(units=50))
-        model.add(Activation('relu'))
-        model.add(Dense(units=10))
-        model.add(Activation('relu'))
-        model.add(Dense(units=1))
         return model
 
     def learn(self, x_train, y_train) :
@@ -118,7 +63,7 @@ class DQN():
                             verbose=1)
 
     def predict(self, state, action):
-        self.model.predict(state)
+        self.model.predict(np.expand_dims(state, axis=0))
 
     def save_model(self, log_dir, model_name):
         # Saving the model

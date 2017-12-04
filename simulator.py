@@ -1,6 +1,5 @@
-from dnn1 import model_1
 from agent import Agent
-
+from deepnet import DQN
 import gym
 
 
