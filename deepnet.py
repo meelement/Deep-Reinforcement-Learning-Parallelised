@@ -8,7 +8,7 @@ from time import time
 from time import strftime
 import numpy as np
 
-
+#TODO Rajouter autres réseaux après avoir testé pour amélioration
 class DQN():
 
     def __init__(self, batch_size, input_shape, optimizer = "Adam"):

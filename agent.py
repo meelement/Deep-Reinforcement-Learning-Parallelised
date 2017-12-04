@@ -1,5 +1,6 @@
 import numpy as np
 
+#TODO Rajouter policies
 
 class Agent():
     def __init__(self, deepnet, policy_name, agent_parameters):

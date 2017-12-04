@@ -15,6 +15,7 @@ class Simulator():
                              agent_parameters=parameters["agent_parameters"])
                        for _ in range(parameters["nb_agents"])]
         self.input_shape = parameters["input_shape"]
+        self.gamma = parameters["gamma"]
 
     def run_episodes(self, agent, nb_episodes):
         for i in range(nb_episodes):
@@ -36,11 +37,10 @@ class Simulator():
                 episodes_obs = np.concatenate((episodes_obs, np.expand_dims(ob, axis=0)), axis=0)
                 episodes_actions.append(action)
 
-        # TODO gamma
-        return {"rewards": np.array([sum(episodes_rewards[i::]) for i in range(len(episodes_rewards))]),
+        return {"rewards": np.array([sum(self.gamma**i * episodes_rewards[i::]) for i in range(len(episodes_rewards))]),
                 "obs": episodes_obs,
                 "actions": np.array(episodes_actions)}
-
+    #TODO partie à paralléliser avec multiprocessing
     def run_agents(self, agents, nb_episodes):
         simulations = []
         for agent in agents:
@@ -54,7 +54,7 @@ class Simulator():
                                                                    nb_episodes=nb_episodes))
             self.deep_q_net.learn(x_train=simulations["obs"],
                                   y_train=simulations["rewards"])
-            # TODO : Complete the DQN learning
+
 
     @staticmethod
     def reshape_simulations(simulations):
