@@ -19,18 +19,6 @@ class model_1():
                            optimizer=optimizer,
                            metrics=['accuracy'])
 
-    def learn(self, x_train, y_train):
-        train_size = x_train.shape[0]
-
-        train_generator = self.train_datagen.flow(x_train, y_train, batch_size=self.batch_size)
-
-        # Train the model
-        self.model.fit_generator(train_generator,
-                                 steps_per_epoch=int(np.ceil(train_size / float(self.batch_size))),
-                                 workers=4,
-                                 epochs=self.epochs,
-                                 verbose=1)
-
     def build_model(self):
         base_model = Xception(input_shape=(224, 224, 3), weights='imagenet', include_top=False)
 
@@ -43,6 +31,19 @@ class model_1():
         model = Model(base_model.input, predictions)
 
         return model
+
+        
+    def learn(self, x_train, y_train):
+        train_size = x_train.shape[0]
+
+        train_generator = self.train_datagen.flow(x_train, y_train, batch_size=self.batch_size)
+
+        # Train the model
+        self.model.fit_generator(train_generator,
+                                 steps_per_epoch=int(np.ceil(train_size / float(self.batch_size))),
+                                 workers=4,
+                                 epochs=self.epochs,
+                                 verbose=1)
 
     def predict(self, state):
         return self.model.predict(state)
